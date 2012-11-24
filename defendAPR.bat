@@ -9,6 +9,13 @@ IF "%1"=="" (
 	ECHO 	The script will then continually monitor the specified IP's entry in
 	ECHO 	the ARP table. If the IP's ARP table ever changes or is removed, the
 	ECHO 	script will BEEP and set the Physical Address back to the correct value.	
+	ECHO AUTHOR
+	ECHO 	Alan Reed
+	ECHO 	Please contact the author with any questions, comments, or concers
+	ECHO 	at al.reed13@gmail.com
+	ECHO LICENSE
+	ECHO 	Copyright 2012. This script is free to use, modify, and redistribute
+	ECHO 	so long as you give credit to the original author.
 	ECHO SYNTAX
 	ECHO 	"defendARP.bat <IPAddr to monitor>"
 	ECHO.
@@ -107,7 +114,8 @@ IF "%a%"=="n" (
 	 :: check that the MAC did not change
 	IF NOT "%GoodMAC%"=="%PhysAddr%" (
 		ECHO.
-		@echo ^G
+		 :: BEEP - echo <ctrl+g> to a .txt, then copy the result onto the line below
+		ECHO  
 		ECHO ARP POISONED!
 		ECHO Spoofed IP: %1
 		ECHO %1's actual Physical Address: %GoodMAC%
