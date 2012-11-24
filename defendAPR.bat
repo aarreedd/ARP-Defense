@@ -107,7 +107,7 @@ IF "%a%"=="n" (
 	 :: check that the MAC did not change
 	IF NOT "%GoodMAC%"=="%PhysAddr%" (
 		ECHO.
-		@echo  
+		@echo ^G
 		ECHO ARP POISONED!
 		ECHO Spoofed IP: %1
 		ECHO %1's actual Physical Address: %GoodMAC%
