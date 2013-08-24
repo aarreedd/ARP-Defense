@@ -1,6 +1,6 @@
 SUMMARY:
 
-This repository containts a ARP Defense Script that can be run on an individual system to protect against ARP Poisoning Attacks and to identify what device on the network in executing the attack. 
+This repository containts a ARP Defense Script that can be run on a single device to protect against ARP Poisoning Attacks and to identify which device on the network is executing the attack. 
 
 
 LICENSE:
