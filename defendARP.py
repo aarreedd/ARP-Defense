@@ -9,7 +9,13 @@ import socket
 import os
 import re
 import time
+import logging
+
+# Import scapy while suppressing warnings
+logging.getLogger("scapy.runtime").setLevel(logging.ERROR) 
 from scapy.all import *
+logging.getLogger("scapy.runtime").setLevel(logging.WARNING)
+
 from optparse import OptionParser
 from subprocess import Popen, PIPE
 
@@ -113,37 +119,41 @@ def printHeader():
 	print("\tthe ARP table. If the IP's ARP table ever changes or is removed, the")
 	print("\tscript will BEEP and set the Physical Address back to the correct value.")	
 	print("AUTHORS")
-	print("\tAlan Reed, Sam Cappella")
-	print("\tPlease contact the authors with any questions, comments, or concerns.")
-	print("\tat al.reed13@gmail.com OR sjcappella@gmail.com")
+	print("\tAlan Reed <alreed13@gmail.com>")
+	print("\tSam Cappella <sjcappella@gmail.com>")
+	print("\tPlease contact the authors with any questions or questions.")
+	print("CONTRIBUTE")
+	print("\thttps://github.com/alan-reed/ARP-Defense")
 	print("LICENSE")
-	print("\tCopyright 2013. This script is free to use, modify, and redistribute")
-	print("\tso long as you give credit to the original author.")
+	print("\tCopyright 2013. Apache license 2.0")
 	print("SYNTAX")
 	print("\tUse: python defendARP.py -h for help.")
-	
+	sys.exit()	
 
 # Main function
 def main(argv):
 	# Create option parser
 	parser = OptionParser()
 	# Define options
-	parser.add_option("-a", "--address", dest="addressToMon", help="IP address to monitor.")
-	parser.add_option("-i", action="store_true", dest="showInfo")
-	parser.add_option("--info", action="store_true", dest="showInfo", help="Show the copyright and about information.")
+	parser.add_option("-a", "--address", dest="ip_addr", help="IP address to monitor.")
+	parser.add_option("-i", "--info", action="store_true", dest="showInfo",  help="Show the copyright and about information.")
 	(options, args) = parser.parse_args()
 	
 
 	# Validate arguments
 	if options.showInfo == True:
 		printHeader()
-	if options.addressToMon == None:
-		print("No IP address to monitor given. Qutting.")
+	if options.ip_addr == None:
+		print("Usage:")
+		print("\tpython defendARP.py -a <ip_addr>")
+		print("\tpython defendARP.py --address=<ip_addr>")
+		print("Help:")
+		print("\tpython defendARP.py --help")
 		sys.exit()
 	else:
 		for ip in socket.gethostbyname_ex(socket.gethostname())[2]:
 			# May want to have a 'starts with' 127. instead of just 127.0.0.1
-			if options.addressToMon == ip or options.addressToMon == "127.0.0.1":
+			if options.ip_addr == ip or options.ip_addr == "127.0.0.1":
 				print("Error: Cannot protect your own IP Address -- Try using the Default Gateway or Router's IP Address.")
 				sys.exit()
 	
@@ -151,7 +161,7 @@ def main(argv):
 	# TODO
 
 	# Call the main defense logic
-	startDefense(options.addressToMon)
+	startDefense(options.ip_addr)
 
 		
 # Main function called upon script entry
