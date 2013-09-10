@@ -13,21 +13,20 @@ import logging
 import subprocess
 
 from optparse 	import OptionParser
-
-# Import scapy while suppressing warnings
-logging.getLogger("scapy.runtime").setLevel(logging.ERROR) 
-#import scapy.all
-# Import needs to be in this format for compatibility issues, I know it isn't as clean
+ 
 try:
+	# Import scapy while suppressing warnings
+	logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 	from scapy.all import ICMP, IP, ARP, Ether, send
+	logging.getLogger("scapy.runtime").setLevel(logging.WARNING)
 except:
-	print("This tool requires scapy, see www.secdev.org/projects/scapy")
+	print("This tool requires Scapy, see www.secdev.org/projects/scapy")
 	sys.exit()
-logging.getLogger("scapy.runtime").setLevel(logging.WARNING)
 
 
+###############################################################
+##################### MAIN DEFENSE LOGIC ######################
 
-# Main defense function
 def startDefense(ipAddress, my_ip, interface):
 	'''
 	ipAddress = IP to defend.
@@ -121,7 +120,11 @@ def startDefense(ipAddress, my_ip, interface):
 
 		# Wait for 5 seconds
 		time.sleep(5)
-
+		
+		
+###############################################################
+###################### UTILITY FUNCTIONS ######################
+		
 # Grab the IP address on a specific interface
 def getMyIp(interface):
 	# This is ok because we validate the output (check to make sure it is an IP address). But could be used to exfultrate info. 
@@ -142,9 +145,7 @@ def getInterface():
 	return output
 
 def ping(ip):
-	# This is NOT ok. Should not allow user input in Popen function
-	#p = subprocess.Popen("ping -c 1 " + ip, shell=True, stdout=subprocess.PIPE)
-	# Instead we can just use a scapy ping
+	# Use scapy ping
 	e = Ether()
 	i = IP()
 	i.dst = ip
@@ -179,9 +180,29 @@ def printUsageInfo():
 	print("Help:")
 	print("\tpython defendARP.py --help")
 	sys.exit()
+	
+def isUnix():
+	if os.name == "posix":
+		return 1
+	else:
+		return 0
 
-# Main function
+def printOsRequirements():
+	print("ERROR:");
+	print("\tThis script only works on Unix systems.")
+	print("\tAn equivalent script for Windows can be found at https://github.com/alan-reed/ARP-Defense/blob/master/defendAPR.bat")
+	sys.exit()
+		
+
+###############################################################
+############################ MAIN #############################
+
 def main(argv):
+	
+	# Check OS (must be unix)
+	if not isUnix():
+		printOsRequirements()
+
 	# Create option parser
 	parser = OptionParser()
 	# Define options
@@ -215,6 +236,5 @@ def main(argv):
 	# Call main defense logic
 	startDefense(options.ip_addr, my_ip, interface)
 
-# Main function
 if __name__ == "__main__":
 	main(sys.argv)
