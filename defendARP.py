@@ -13,16 +13,21 @@ import logging
 
 # Import scapy while suppressing warnings
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR) 
-from scapy.all import *
+import scapy.all
 logging.getLogger("scapy.runtime").setLevel(logging.WARNING)
 
 from optparse import OptionParser
-from subprocess import Popen, PIPE
+import subprocess
 
 # Main defense function
-def startDefense(ipAddress):
-	# Remove given IP Address from local ARP table
+def startDefense(ipAddress, my_ip, interface):
+	# ipAddress = IP to defend.
+	# my_ip = IP on the device running the script.
+	# interface = Network interface we are defending.
+
+	# Remove given IP Address from local ARP table.
 	print("INITIALIZING...")
+	ping(ipAddress)
 	print("Removing %s from the ARP table.") % (ipAddress)
 	os.system("arp -d " + ipAddress)
 	print("OK.\n")
@@ -110,6 +115,27 @@ def startDefense(ipAddress):
 		# Wait for 5 seconds
 		time.sleep(5)
 
+def getMyIp(interface):
+	# This is ok because we validate the output (check to make sure it is an IP address). But could be used to exfultrate info. 
+	p = subprocess.Popen("ifconfig " + interface + " | grep 'inet addr' | awk -F: '{print $2}' | awk '{print $1}'", shell=True, stdout=subprocess.PIPE)
+	output = p.communicate()[0].rstrip()
+
+	try:
+	    socket.inet_aton(output)
+	    return output
+	except socket.error:
+	    return ''
+
+def getInterface():
+	# This is ok because there is not user input. Do NOT trust user input in this function. Use call() instead.
+	p = subprocess.Popen("ifconfig  | grep 'Link encap' |  awk  '{print $1}' | head -1", shell=True, stdout=subprocess.PIPE)
+	output = p.communicate()[0].rstrip()
+	return output
+
+def ping(ip):
+	# This is NOT ok. Should not allow user input in Popen function
+	p = subprocess.Popen("ping -c 1 " + ip, shell=True, stdout=subprocess.PIPE)
+
 # Print the header information
 def printHeader():
 	print("SUMMARY")
@@ -128,7 +154,16 @@ def printHeader():
 	print("\tCopyright 2013. Apache license 2.0")
 	print("SYNTAX")
 	print("\tUse: python defendARP.py -h for help.")
-	sys.exit()	
+	sys.exit()
+
+# Print basic usage info
+def printUsageInfo():
+	print("Usage:")
+	print("\tpython defendARP.py -a <ip_addr_to_monitor>")
+	print("\tpython defendARP.py --address=<ip_addr_to_monitor>")
+	print("Help:")
+	print("\tpython defendARP.py --help")
+	sys.exit()
 
 # Main function
 def main(argv):
@@ -136,34 +171,31 @@ def main(argv):
 	parser = OptionParser()
 	# Define options
 	parser.add_option("-a", "--address", dest="ip_addr", help="IP address to monitor.")
+	parser.add_option("-f", "--interface", dest="interface",  help="Interface to defend.")
 	parser.add_option("-i", "--info", action="store_true", dest="showInfo",  help="Show the copyright and about information.")
 	(options, args) = parser.parse_args()
 	
-
 	# Validate arguments
 	if options.showInfo == True:
 		printHeader()
 	if options.ip_addr == None:
-		print("Usage:")
-		print("\tpython defendARP.py -a <ip_addr>")
-		print("\tpython defendARP.py --address=<ip_addr>")
-		print("Help:")
-		print("\tpython defendARP.py --help")
-		sys.exit()
-	else:
-		for ip in socket.gethostbyname_ex(socket.gethostname())[2]:
-			# May want to have a 'starts with' 127. instead of just 127.0.0.1
-			if options.ip_addr == ip or options.ip_addr == "127.0.0.1":
-				print("Error: Cannot protect your own IP Address -- Try using the Default Gateway or Router's IP Address.")
-				sys.exit()
-	
-	# Report Errors in the command line options
-	# TODO
+		printUsageInfo()
 
-	# Call the main defense logic
-	startDefense(options.ip_addr)
+	if options.interface == None:
+		interface = getInterface()
+		my_ip = getMyIp(interface)
+	else: 
+		my_ip = getMyIp(interface)
+	if options.ip_addr == my_ip:
+		print("Error: Cannot monitor your own IP Address -- Try using the Default Gateway.\n")
+		printUsageInfo()
 
-		
-# Main function called upon script entry
+	#TODO
+	# Make sure the IP address is reachable
+
+	# Call main defense logic
+	startDefense(options.ip_addr, my_ip, interface)
+
+# Main function
 if __name__ == "__main__":
 	main(sys.argv)
