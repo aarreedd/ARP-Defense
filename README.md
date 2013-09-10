@@ -27,4 +27,4 @@ Sam Cappella
 
 ##CONTACT THE AUTHOR:
 
-Please feel free to contact the authors with any questions or comments <alreed13 at gmail> OR <sjcappella at gmail>.
+Please feel free to contact the authors with any questions or comments. alreed13 at gmail OR sjcappella at gmail.
