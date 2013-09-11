@@ -1,0 +1,4 @@
+Requirements:
+
+Python 2.6.5
+Scapy 2.0.1
