@@ -44,12 +44,6 @@ def startDefense(ipAddress, my_ip, interface):
 	# Ping the IP to establish it's correct MAC address.
 	# NOTE: The ARP could still be poisoned if an attacker sends poison packets while we are pinging.
 	print("Obtainting MAC address.")
-	
-	# Have to do ARP to repopulate ARP table?
-	# Need to wait for it to finish or we will get to the next step and can't get a tempMac
-	#send(Ether()/ARP(pdst=ipAddress,op="is-at"))
-	#time.sleep(2)
-	
 	packet = ping(ipAddress)
 	targetMac = packet[Ether].dst
 	print("MAC address found: %s") % (targetMac)
@@ -60,7 +54,6 @@ def startDefense(ipAddress, my_ip, interface):
 	process = subprocess.Popen(['arp', '-a'], stdout=subprocess.PIPE)
 	for line in iter(process.stdout.readline, ''):
 		tokens = line.split()
-		print(tokens)
 		for index in range(len(tokens)):
 			if targetMac == tokens[index]:
 				print("Found MAC address in ARP table for target IP address.")
@@ -93,7 +86,6 @@ def startDefense(ipAddress, my_ip, interface):
 		process = subprocess.Popen(['arp', '-a'], stdout=subprocess.PIPE)
 		for line in iter(process.stdout.readline, ''):
 			tokens = line.split()
-			print(tokens)
 			for index in range(len(tokens)):
 				if targetMac == tokens[index]:
 					# Save IP address and MAC address, get rid of surrounding '()'s
