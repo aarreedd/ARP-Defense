@@ -11,18 +11,7 @@ import re
 import time
 import logging
 import subprocess
-
 from optparse 	import OptionParser
- 
-try:
-	# Import scapy while suppressing warnings
-	logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
-	from scapy.all import ICMP, IP, ARP, Ether, send
-	logging.getLogger("scapy.runtime").setLevel(logging.WARNING)
-except:
-	print("This tool requires Scapy, see www.secdev.org/projects/scapy")
-	sys.exit()
-
 
 ###############################################################
 ##################### MAIN DEFENSE LOGIC ######################
@@ -35,83 +24,66 @@ def startDefense(ipAddress, my_ip, interface):
 	'''
 
 	# Remove given IP Address from local ARP table.
-	print("INITIALIZING...")
-	ping(ipAddress)
+	print("\nINITIALIZING...")
 	print("Removing %s from the ARP table.") % (ipAddress)
 	os.system("arp -d " + ipAddress)
-	print("OK.\n")
+	print("OK.")
 
 	# Ping the IP to establish it's correct MAC address.
 	# NOTE: The ARP could still be poisoned if an attacker sends poison packets while we are pinging.
+
 	print("Obtainting MAC address.")
-	packet = ping(ipAddress)
-	targetMac = packet[Ether].dst
-	print("MAC address found: %s") % (targetMac)
 
+	ping(ipAddress)
 
-	# Find the specified IP in the ARP table and corresponding MAC address
-	print("Gathering MAC address from IP address in ARP Table.")
-	process = subprocess.Popen(['arp', '-a'], stdout=subprocess.PIPE)
-	for line in iter(process.stdout.readline, ''):
-		tokens = line.split()
-		for index in range(len(tokens)):
-			if targetMac == tokens[index]:
-				print("Found MAC address in ARP table for target IP address.")
-				# Save IP address and MAC address, get rid of surrounding '()'s
-				tempAddr = tokens[1][1:-1]
-				tempMac = tokens[3]
-				tempLine = tokens
-	
+	mac = getMAC(ipAddress)
+
+	print("MAC address found: %s") % (mac)
+
 	# Confirm the physical address of target
-	print("Is %s the correct MAC address for %s (Y/N)?") % (tempMac, ipAddress)
 	valid = False
 	while valid != True:
+		print("Is %s the correct MAC address for %s (y/n)?") % (mac,ipAddress)
 		answer = str(raw_input("> "))
-		print(answer)
 		if answer == "N" or answer == "n":
-			print("If this is not the correct MAC then you have already been poisoned")
+			print("If this is not the correct MAC then you have already been poisoned.")
 			print("You must start this script in a 'safe' state.")
 			sys.exit()
 		elif answer == "Y" or answer == "y":
 			print("OK.\n")
 			print("Monitoring your ARP table...\n")
-			goodMac = tempMac
+			goodMac = mac
 			valid = True
-		else:
-			print("Invalid Answer. Try again.")
 
 	# Set monitor loop
 	monitor = True
 	while monitor == True:
-		process = subprocess.Popen(['arp', '-a'], stdout=subprocess.PIPE)
-		for line in iter(process.stdout.readline, ''):
-			tokens = line.split()
-			for index in range(len(tokens)):
-				if targetMac == tokens[index]:
-					# Save IP address and MAC address, get rid of surrounding '()'s
-					tempAddr = tokens[1][1:-1]
-					tempMac = tokens[3]
-					tempLine = tokens
+		mac = getMAC(ipAddress)
 
 		# Check to make sure our good MAC address matches the one in the ARP table
-		if goodMac != tempMac:
-			# This should make a BEEP sound
-			subprocess.Popen(['echo', '-en', '"\007"'])
+		if goodMac != mac:
+			beep()
 			print("ARP POISONED!")
-			print("Spoofed IP: %s") % (tempAddr)
-			print("%s actual Physical Address: %s") % (goodMac)
-			print("Attacker's Physical Address: %s") % (tempMac)
+			print("Spoofed IP: %s") % (ipAddress)
+			attackersIP = ''
+			attackersIP = getAttackerIP(ipAddress, mac)
+			print("Attacker is sending your traffic to %s") % (attackersIP)
+			print("%s's actual Physical Address: %s") % (ipAddress, goodMac)
+			print("Attacker's Physical Address: %s") % (mac)
 			print("Attempting to reset the correct Physical Address...")
 
-			# Attempt to reset the ARP table. This will not work if we are continually being poisoned
-			process = subprocess.Popen(['arp', '-d', tempAddr], stdout=subprocess.PIPE)
-			# Re-ping the target
-			packet = ping(ipAddress)
-			print("ARP Table reset.")
-			print("Monitoring your ARP table...")
+			deleteMAC(ipAddress)
+			
+			# Re-ping the target to establish correct MAC
+			ping(ipAddress)
 
-		# Wait for 5 seconds
-		time.sleep(5)
+			mac = getMAC(ipAddress)
+
+			print("ARP Table reset.")
+			print("\nMonitoring your ARP table...\n")
+
+		# Wait for 2 seconds
+		time.sleep(2)
 		
 		
 ###############################################################
@@ -129,6 +101,29 @@ def getMyIp(interface):
 	except socket.error:
 	    return ''
 
+# play beep sound
+def beep():
+	print("\a")
+
+# Remove a IP/MAC pair from ARP table where IP == $1
+def deleteMAC(ipAddress):
+	p = subprocess.Popen("arp -d " + ipAddress, shell=True, stdout=subprocess.PIPE)
+	output = p.communicate()[0].rstrip()
+
+# Get duplicate IP from ARP table
+def getAttackerIP(goodIP, mac):
+	command = "arp -a | grep '" + mac + "' | grep -v '(" + goodIP + ")' |  awk  '{print $2}'"
+	p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+	output = p.communicate()[0].rstrip()
+	output = output.replace('(', '').replace(')', '')
+	return output
+
+# Get MAC of IP from ARP Table
+def getMAC(ip):	
+	p = subprocess.Popen("arp -a | grep  '(" + ip + ")' |  awk  '{print $4}'", shell=True, stdout=subprocess.PIPE)
+	output = p.communicate()[0].rstrip()
+	return output
+
 # Find the name of the interface we are going to use
 def getInterface():
 	# This is ok because there is not user input. Do NOT trust user input in this function. Use call() instead.
@@ -137,12 +132,14 @@ def getInterface():
 	return output
 
 def ping(ip):
-	# Use scapy ping
-	e = Ether()
-	i = IP()
-	i.dst = ip
-	packet = e/i/ICMP()
-	return packet
+	# return == 1: OK.
+	# return == 0: Failed.
+	p = subprocess.Popen("ping -c 1 " + ip, shell=True, stdout=subprocess.PIPE)
+	output = p.communicate()[0].rstrip()
+	if "1 received" in output:
+		return 1
+	else:
+		return 0
 
 # Print the header information
 def printHeader():
@@ -197,6 +194,7 @@ def main(argv):
 
 	# Create option parser
 	parser = OptionParser()
+
 	# Define options
 	parser.add_option("-a", "--address", dest="ip_addr", help="IP address to monitor.")
 	parser.add_option("-f", "--interface", dest="interface",  help="Interface to defend.")
@@ -214,15 +212,13 @@ def main(argv):
 	else: 
 		my_ip = getMyIp(interface)
 	if options.ip_addr == my_ip:
-		print("Error: Cannot monitor your own IP Address -- Try using the Default Gateway.\n")
+		print("Error: Cannot monitor your own IP Address -- Try using the Default Gateway's IP.\n")
 		printUsageInfo()
 
-	#TODO
 	# Make sure the IP address is reachable
-	packet = ping(options.ip_addr)
-	# A packet with a destination MAC of 'ff:ff:ff:ff:ff:ff' will be returned if the target is not found
-	if packet[Ether].dst == "ff:ff:ff:ff:ff:ff":
-		print("Target can not be found! Please make sure you are using the correct IP address.")
+	res = ping(options.ip_addr)
+	if res == 0:
+		print("Address unreachable.");
 		sys.exit()
 	
 	# Call main defense logic
