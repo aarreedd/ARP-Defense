@@ -28,13 +28,13 @@ IF "%1"=="" (
 
  :: Check if $1 is Local hosts IP
 FOR /F "tokens=2" %%i in ('ARP -A ^| FINDSTR \-\-\-') do (
-	SET ipaddr=%%i
 
+	IF "%1"=="%%i" (
+		ECHO Cannot protect your own IP Address -- Try using the Default Gateway or router's IP Address.
+		GOTO ERROR
+	)
 )
-IF "%1"=="%%i" (
-	ECHO Cannot protect your own IP Address -- Try using the Default Gateway or router's IP Address.
-	GOTO ERROR
-)
+
 
 ECHO INITIALIZING...
 ECHO.
