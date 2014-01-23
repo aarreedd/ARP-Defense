@@ -18,15 +18,20 @@ IF "%1"=="" (
 	ECHO 	so long as you give credit to the original author.
 	ECHO SYNTAX
 	ECHO 	"defendARP.bat <IPAddr to monitor>"
+	ECHO DESCRIPTION
+	ECHO 	^<IPAddr to monitor^> should NOT be your own IPAddr. Use the IPAddr
+	ECHO 	of a different device on you LAN that you are communicating with. Try
+	ECHO 	the IPAddr of your network gateway.
 	ECHO.
 	GOTO ERROR
 )
 
  :: Check if $1 is Local hosts IP
-FOR /F "tokens=14" %%i in ('IPCONFIG ^| FINDSTR IPv4') do (
+FOR /F "tokens=2" %%i in ('ARP -A ^| FINDSTR \-\-\-') do (
 	SET ipaddr=%%i
+
 )
-IF "%1"=="%ipaddr%" (
+IF "%1"=="%%i" (
 	ECHO Cannot protect your own IP Address -- Try using the Default Gateway or router's IP Address.
 	GOTO ERROR
 )
