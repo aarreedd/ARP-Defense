@@ -10,17 +10,19 @@ DefendARP.bat for Windows
 
 ##HOW IT WORKS:
 
-Initialize script before you have been ARP poisoned and confrim the gateway's correct IP and MAC. The script then monitors the device's ARP table. If the gateway's MAC address changes (indicating ARP Poisoning), the script will reset the MAC Address and identify the source of the attack.
+Initialize script before you have been ARP poisoned and confrim the remote host's IP and MAC. The script then monitors your machine's ARP table. If the MAC address you are monitoring changes (indicating ARP Poisoning), the script will reset the MAC Address and identify the source of the attack.
 
 
 ##LICENSE:
 
-Copyright 2013. Apache License 2.0 (Apache-2.0)
+Copyright 2013. Apache License 2.0.
 
 
 ##AUTHORS:
 
 Alan Reed
+
+Jon Weber
 
 Sam Cappella
 
