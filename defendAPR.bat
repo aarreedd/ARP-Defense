@@ -12,7 +12,7 @@ IF "%1"=="" (
 	ECHO AUTHOR
 	ECHO 	Alan Reed
 	ECHO 	Please contact the author with any questions, comments, or concers
-	ECHO 	at al.reed13@gmail.com
+	ECHO 	at alan.william.reed@gmail.com
 	ECHO LICENSE
 	ECHO 	Copyright 2012. This script is free to use, modify, and redistribute
 	ECHO 	so long as you give credit to the original author.
